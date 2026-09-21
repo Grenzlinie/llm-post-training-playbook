@@ -1,8 +1,10 @@
 # PostTrain Atlas · 大模型后训练图谱
 
+[![在线阅读](https://img.shields.io/badge/%E5%9C%A8%E7%BA%BF%E9%98%85%E8%AF%BB-posttraining--atlas-0f766e)](https://posttraining-atlas.grenzlinie-liu.chatgpt.site/)
+
 **从「模型会说」到「模型会完成任务」——一本可以交互的大模型后训练全书导读。**
 
-[English Version](README.en.md)
+🌐 **在线阅读：<https://posttraining-atlas.grenzlinie-liu.chatgpt.site/>** ｜ [English Version](README.en.md)
 
 PostTrain Atlas 把一部 791 页的大模型后训练著作，压缩成一张可操作的学习地图：**6 个部分、26 个章节、8 个核心公式、1 条实战流水线**。它回答的是同一个核心问题——如何把预训练得到的概率分布，变成能稳定追求目标、使用工具、接受验证、并在长时域里完成任务的策略。
 
