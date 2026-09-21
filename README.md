@@ -1,126 +1,122 @@
-# vinext-starter
+# PostTrain Atlas · 大模型后训练图谱
 
-A clean full-stack starter running on [vinext](https://github.com/cloudflare/vinext), with optional Cloudflare D1 and Drizzle support.
+**从「模型会说」到「模型会完成任务」——一本可以交互的大模型后训练全书导读。**
 
-## Prerequisites
+[English Version](README.en.md)
 
-- Node.js `>=22.13.0`
-- Portable: Windows, macOS, or Linux; no Bash required
-- Managed Linux: managed Linux runtime with Bash, `flock`, `curl`, `sha256sum`, and GNU `timeout`
-- Git is required only for publishing
+PostTrain Atlas 把一部 791 页的大模型后训练著作，压缩成一张可操作的学习地图：**6 个部分、26 个章节、8 个核心公式、1 条实战流水线**。它回答的是同一个核心问题——如何把预训练得到的概率分布，变成能稳定追求目标、使用工具、接受验证、并在长时域里完成任务的策略。
 
-## Sites Lifecycle
+全书一句话结论：**算法名会变，真正承重的是四件事——反馈是否可信、样本是否有梯度、信用是否给对动作、测量是否看见真实进步。** 先优化验证器、环境与诊断，再优化损失函数。
 
-The Sites initializer copies the shared starter and selects managed-linux only when `SITES_MANAGED_LINUX_CONTAINER=1`; otherwise it selects portable. It saves the selection only in ignored `.sites-runtime/execution-profile.json`. Both profiles copy/configure first, then use the plugin's separate `install-dependencies.mjs` step to measure installation independently. Edit source under `app/` and follow the Sites skill for installation, preview, builds, and publishing.
+---
 
-Whenever reopening or moving a checkout, run `node <plugin-root>/scripts/configure-execution-profile.mjs` before project commands. Profile changes do not alter tracked source or require reinstalling otherwise-valid dependencies; restart an existing preview to use the new selection. Do not commit or upload `.sites-runtime/`.
+## 本站结构
 
-This starter does not use `wrangler.jsonc`.
+网站分为四个工作区，对应四种不同的使用方式：
 
-`install:ci` runs `npm ci` once against the shared lockfile, disables parent-workspace discovery, and includes required dev/optional dependencies despite production/omit settings. Sharp defaults to prebuilt binaries unless explicitly configured otherwise. Do not overlap installers.
+| 工作区 | 它是什么 | 适合什么时候用 |
+|---|---|---|
+| **全书总览** | 一句话结论、后训练流水线全景、六部分知识地图、「什么已经站得住」共识清单、3 分钟自测 | 第一次来，快速建立全局框架 |
+| **章节地图** | 26 章完整目录。每章只回答三件事：解决什么问题、最可信的结论是什么、落地时要做什么。支持按部分筛选、全文搜索、标记已掌握 | 系统性学习，或带着具体问题查阅 |
+| **公式实验室** | 8 个核心公式的逐参数释义与直觉解释，附两个可拖动的交互实验：奖励如何重排概率、pass@k 与退化组 | 被公式卡住时，先把每个量的含义弄清楚 |
+| **实战流水线** | 症状诊断器（5 种典型失效模式 → 机制判断 → 行动清单）、7 阶段生产闭环、开跑前 12 项检查、方法选择决策树 | 训练真的出问题时，从这里开始排查 |
 
-- **Portable:** Preserve host HOME, npm cache, registry, proxy, temporary paths, retry/concurrency settings, and lifecycle-script policy. Use `--prefer-offline --no-audit --no-fund`.
-- **Managed Linux:** Use the existing project-local HOME/cache/tmp setup and Linux install lock, tarball preflight, and timeout. Restore the image-seeded npm cache only when its lockfile hash matches; retain network fallback. Builds keep their existing timeout. These helpers are not invoked by the portable profile.
+学习进度会保存在浏览器本地，可以按自己的节奏推进。
 
-`scripts/sites-env.mjs` preserves the caller's HOME, npm cache, proxy, XDG, and temporary-directory configuration while defaulting Wrangler and Miniflare state to the checkout. If npm reports an unwritable cache, select a writable path with `npm_config_cache` for that install. The `dev` and `start` scripts also keep Wrangler logs inside the checkout. Generated `.sites-runtime/` and `.wrangler/` directories are disposable and ignored by Git.
+---
 
-On portable, `npm run dev` uses `vinext dev` with HMR, starting at port 5173. Vinext records the running server in ignored `.vinext/` state, rejects an ordinary duplicate launch, and recovers stale state after a stopped process; exactly simultaneous starts can race. Pass `--port <port>` or `--hostname <host>` after `npm run dev --` when needed; keep portable previews on loopback.
+## 六部分内容导览
 
-For browser QA on managed Linux, use `sites-preview start`. The project's dev script runs Vite and accepts the supervisor's `--host 0.0.0.0 --port 4173 --strictPort` arguments. The internal browser uses `http://terminal.local:4173/`; it is not a user-facing URL. The supervisor owns the preview lifecycle. The ignored local profile survives the supervisor's cleared process environment.
+### 第一部分 · 基础（第 1–4 章）——把语言模型看成策略
 
-The portable profile simulates ChatGPT sign-in only for loopback development requests. Visit `/signin-with-chatgpt?return_to=/` to sign in as `local_seedy` (`seedy@sites.test`, display name `Seedy`) and `/signout-with-chatgpt?return_to=/` to sign out. The development cookie preserves that identity across server restarts. Mock auth is disabled in the managed-linux profile and is not included in production builds; hosted authentication remains dispatch-owned.
+> 预训练只会复现语料分布，不能稳定地选择好行为。这一部分建立全书的形式化语言。
 
-The Worker uses `vinext/server/fetch-handler`, including Vinext's config-aware image handling. After building, `npm start` runs that Worker locally through Wrangler on `127.0.0.1`, sharing `.wrangler/state` with dev preview and local D1 migrations; it does not deploy the site or simulate sign-in. Use the URL printed by the server. Pass `npm start -- --port <port>` to select a different built-preview port.
+- **第 1 章 · 后训练范式** — 全书总纲：后训练是在参考策略附近最大化反馈；格式、偏好、能力与智能体是四重差距；「验证比生成便宜」是整个时代的发动机。
+- **第 2 章 · 作为策略的语言模型** — 把逐词元生成写成可优化的决策过程：词元级 MDP 与序列级老虎机共享同一目标，却导向不同估计器。
+- **第 3 章 · 监督微调** — SFT 是模仿学习：擅长播种行为，不擅长从模型自己造成的错误状态中恢复；过量 SFT 会带来遗忘与记忆。
+- **第 4 章 · 后训练的数据** — 什么数据值得生产：可验证提示能随策略更新反复产生新鲜梯度；对组相对 RL，过难和过易的提示都几乎无贡献。
 
-Local previews use Miniflare's placeholder `Request.cf` metadata without a network lookup. Set `CLOUDFLARE_CF_FETCH_ENABLED=true` to opt into fetching preview metadata; this setting does not change hosted request metadata.
+### 第二部分 · 反馈对齐（第 5–9 章）——从偏好到在线优化
 
-Local tool usage metrics are disabled by default. Set `WRANGLER_SEND_METRICS=true` to opt in.
+> 如何把人类或模型的比较，变成可优化的标量，再变成概率的更新。
 
-## Included Shape
+- **第 5 章 · 偏好与奖励模型** — Bradley–Terry 只能识别逐提示奖励差；冻结奖励模型的有效半径应以策略 KL 衡量。
+- **第 6 章 · 策略梯度** — 奖励如何真正改变输出概率：算法差异主要在优势估计与信赖域，而不在名字。
+- **第 7 章 · RLHF 工程实践** — 为什么理论相同的 PPO 实现会得到完全不同的结果：实现细节常比截断目标本身更重要。
+- **第 8 章 · 直接对齐算法** — DPO 是对 KL 正则最优策略的重参数化极大似然，不是 RL；它便宜，但会出现似然位移与长度偏置。
+- **第 9 章 · 在线、迭代与博弈** — 同一损失换成当前策略数据后为何经常更强：迭代的价值是产生相关负样本；非传递偏好更适合作为博弈。
 
-- edit site code under `app/`
-- `app/chatgpt-auth.ts` provides optional dispatch-owned ChatGPT sign-in helpers
-- `.openai/hosting.json` declares optional Sites D1 and R2 bindings
-- `vite.config.ts` simulates declared bindings for local development
-- `db/index.ts` reads the D1 binding from the Cloudflare Worker environment
-- `db/schema.ts` starts intentionally empty
-- `@cloudflare/workers-types` provides Worker types; `cloudflare-env.d.ts` declares optional `DB`/`BUCKET` bindings—update these declarations if binding names change
-- `examples/d1/` contains an optional D1 example surface
-- `drizzle.config.ts` supports local migration generation when needed
+### 第三部分 · 推理（第 10–15 章）——验证器、RLVR 与信用
 
-## Workspace Auth Headers
+> 推理预算应该花在更长、更多、筛选还是搜索？这是当前竞争最激烈的部分。
 
-Signed-in visitors receive both `oai-authenticated-user-id` and `oai-authenticated-user-email`. Private Sites require every visitor to sign in; public Sites may also have anonymous visitors, for whom neither header is present.
+- **第 10 章 · 推理与测试时计算** — 思维链是串行计算，不保证忠实解释；验证器把覆盖率转化为可靠答案，质量通常比采样数更重要。
+- **第 11 章 · 可验证奖励强化学习** — RLVR 用程序替代奖励模型；R1-Zero 说明结果奖励可诱发回溯与自检，但完整能力来自整条流水线。
+- **第 12 章 · GRPO 的解剖** — GRPO 的提升究竟来自策略梯度还是记账方式：最大效应常来自长度与组标准差归一化，退化组会让有效批量持续缩小。
+- **第 13 章 · 信用分配与过程监督** — 最终奖励如何分配给长链中的每一步：更细的信用用偏差换方差；PRM 适合重排序，作为训练奖励的证据更弱。
+- **第 14 章 · RL 究竟教会了什么** — 发现新能力还是锐化已有行为？更稳妥的答案是「先发现、后锐化」；pass@1 上升不代表大 k 覆盖率上升。
+- **第 15 章 · 超越可验证领域** — 写作、研究等不能精确验收的任务：可验证性是连续谱；乘法门控优于把程序分数与评判分数相加。
 
-The user ID is stable for the same user on the same Site and different across Sites. Use it as the durable user key; use email and name for display or contact purposes.
+### 第四部分 · 智能体（第 16–20 章）——工具、环境与长时域
 
-SIWC-authenticated workspace sites may also receive `oai-authenticated-user-full-name` when the user's SIWC profile has a non-empty `name` claim. The full-name value is percent-encoded UTF-8 and is accompanied by `oai-authenticated-user-full-name-encoding: percent-encoded-utf-8`.
+> 环境进入循环后，单轮语言 RL 的假设逐一失效。
 
-Treat the full name as optional and fall back to email when it is absent:
+- **第 16 章 · 从推理到智能体** — 轨迹由策略与环境联合生成，问题变为 POMDP；观测词元不属于策略动作，给它们算 loss 会教模型伪造工具输出。
+- **第 17 章 · 工具集成强化学习** — 怎样让模型在正确时机调用正确工具：奖励调用次数会选择低信息查询；要给工具调用显式定价。
+- **第 18 章 · 长时域智能体 RL** — 百轮任务为何让单轮配方失灵：奖励稀疏、上下文、采样成本与方差共同随时域恶化。
+- **第 19 章 · 环境、沙箱与任务供给** — 环境质量本身就是奖励函数的一部分；固定任务池很快耗尽，任务与验证器供给才是真瓶颈。
+- **第 20 章 · 多智能体与自博弈** — 关键不是角色数量，而是参数与奖励是否共享；轨迹奖励给无关角色同量级噪声，会导致角色坍缩。
 
-```tsx
-import { headers } from "next/headers";
+### 第五部分 · 系统（第 21–23 章）——吞吐、失配与成本
 
-export default async function Home() {
-  const requestHeaders = await headers();
-  const userId = requestHeaders.get("oai-authenticated-user-id");
-  const email = requestHeaders.get("oai-authenticated-user-email");
-  const encodedFullName = requestHeaders.get("oai-authenticated-user-full-name");
-  const fullName =
-    encodedFullName &&
-    requestHeaders.get("oai-authenticated-user-full-name-encoding") ===
-      "percent-encoded-utf-8"
-      ? decodeURIComponent(encodedFullName)
-      : null;
+> 采样、训练、同步和环境怎样排布，才能不让 GPU 等待。
 
-  const displayName = fullName ?? email;
-  // ...
-}
+- **第 21 章 · 大规模后训练系统** — 生成主导账单；权重同步与掉队者是隐藏大项；异步不是开关，而是一个必须受控的陈旧度界。
+- **第 22 章 · 采样与训练失配** — 同一权重在推理引擎与训练引擎上也可能不是同一策略；小的逐词元差距会沿长序列累积并毁掉 ESS。
+- **第 23 章 · 效率与成本控制** — 下一单位算力应该花在采样、训练、蒸馏还是数据上：多数工程优化移动的是到达同一水平的速度，不是能力上限。
+
+### 第六部分 · 测量与安全（第 24–26 章）——知道自己是否真的进步
+
+> 奖励上升不是成功证据。最后三章讲如何避免自欺欺人。
+
+- **第 24 章 · 评测与测量** — 小基准 2–5 个百分点的增益常低于噪声底，单种子消融尤其不可信；优先配对检验与多种子。
+- **第 25 章 · 安全对齐与稳健性** — 安全包含五个不同问题；标准目标通常只能产生浅层对齐；提示注入是权限分离失败，不是拒答失败。
+- **第 26 章 · 开放问题与前沿** — 截至 2026 年中：最可靠的共识多是机制与测量原则，而不是算法排名；长时域信用、环境供给与系统失配仍未解决。
+
+---
+
+## 八个核心公式
+
+公式实验室把全书压缩成 8 个仪表盘，每个都附参数释义与直觉：
+
+| 公式 | 它控制什么 |
+|---|---|
+| 统一目标 `J(θ)=E[r(x,y)]−βD_KL(πθ‖πref)` | 在追求奖励时限制策略不偏离参考模型 |
+| KL 正则最优策略 | 奖励如何重排原策略的概率，而非凭空创造行为 |
+| 策略梯度 | 把整条轨迹的一次评分转成逐动作更新 |
+| PPO 截断目标 | 避免一次更新把新策略推离采样策略太远 |
+| DPO | 不做在线采样，直接从偏好对优化策略 |
+| GRPO 组优势 | 不用评论家，用同提示多回答的相对得分做基线 |
+| pass@k | 采样 k 次至少一次成功的概率 |
+| 长序列有效样本量 | 数值失配沿长序列累积后还剩多少有效样本 |
+
+---
+
+## 适合谁
+
+- 正在做 RLHF / RLVR / Agent RL 实验，被「奖励涨了但真实评测掉了」之类问题困住的工程师——直接从**实战流水线**的症状诊断器入手；
+- 想系统建立后训练知识框架的研究者与学习者——从**全书总览**进入，按六部分推进**章节地图**；
+- 准备面试或组会分享的人——每章的「问题 / 结论 / 落地动作」三段式本身就是现成的提纲。
+
+## 本地运行
+
+基于 [vinext](https://github.com/cloudflare/vinext)（Cloudflare 的全栈框架）构建，要求 Node.js ≥ 22.13：
+
+```bash
+npm run install:ci   # 一次性锁定依赖安装
+npm run dev          # 启动开发服务器（默认端口 5173）
 ```
 
-## Optional Dispatch-Owned ChatGPT Sign-In
+---
 
-Import the ready-to-use helpers from `app/chatgpt-auth.ts` when the site needs optional or required ChatGPT sign-in:
-
-- Use `getChatGPTUser()` for optional signed-in UI.
-- Use the returned `userId` as the stable user key for user-owned records; do not use email as a durable identifier.
-- Use `requireChatGPTUser(returnTo)` for server-rendered pages that should send anonymous visitors through Sign in with ChatGPT.
-- In a Server Component, start sign-in with `<a href={chatGPTSignInPath(returnTo)} target="_top">`. The auth helper module is server-only; do not import it into a Client Component.
-- Do not use `fetch`, XHR, a client-side router, or a framework link that can prefetch the sign-in route. SIWC must start as a top-level navigation.
-- Never request the AuthAPI authorization endpoint directly. The dispatch-owned `/signin-with-chatgpt` route must start the SIWC flow.
-- Use `chatGPTSignOutPath(returnTo)` for browser sign-out links or actions.
-- Pass a same-origin relative `returnTo` path for the destination after sign-in or sign-out. The helper validates and safely encodes it.
-- Mark protected pages with `export const dynamic = "force-dynamic"` because they depend on per-request identity headers.
-
-Dispatch owns `/signin-with-chatgpt`, `/signout-with-chatgpt`, `/callback`, the OAuth cookies, and identity header injection. Do not implement app routes for those reserved paths. Routes that do not import and call the helper remain anonymous-compatible.
-
-SIWC establishes identity only; it does not prove workspace membership. Use the Sites hosting platform's access policy controls for workspace-wide restrictions, or enforce explicit server-side membership or allowlist checks.
-
-Use SIWC for account pages, user-specific dashboards, saved records, and write actions tied to the current ChatGPT user. Leave public content anonymous.
-
-## Local D1 migrations
-
-For a D1-backed local preview, generate SQL with `npm run db:generate`. Build once through the Sites skill's build entrypoint (or `npm run build` for standalone use) to generate `dist/server/wrangler.json`, rebuilding if bindings change. From the project root, apply each pending migration in order:
-
-```sh
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_example.sql
-```
-
-Replace the filename with the pending migration and `DB` with your D1 binding name if different. Use `.wrangler/state`, not `.wrangler/state/v3`; Wrangler adds the versioned directories. Do not replay migrations already applied locally. This updates only the preview database; publishing applies production migrations separately.
-
-## Diagnostic Commands
-
-- `npm run install:ci`: perform the one locked dependency install
-- `npm run dev`: start the Vite/Vinext development server
-- `npm run build`: build the deployable Sites artifact
-- `npm run start`: preview the built Worker locally with D1/R2 support
-- `npm run db:generate`: generate Drizzle migrations after schema changes
-
-When using the Sites plugin, follow its skill instructions for installation, builds, and publishing. These npm commands remain available for standalone use.
-
-The portable build runs Vinext directly without a host `timeout` command. The managed-linux build uses `scripts/build-verified.sh` and its existing `SITES_BUILD_TIMEOUT` setting.
-
-## Learn More
-
-- [vinext Documentation](https://github.com/cloudflare/vinext)
-- [Drizzle D1 Guide](https://orm.drizzle.team/docs/get-started/d1-new)
+*内容基于 2026·07 版全书整理。*
