@@ -1,8 +1,10 @@
 # PostTrain Atlas · An Interactive Atlas of LLM Post-Training
 
+[![Read Online](https://img.shields.io/badge/Read_Online-posttraining--atlas-0f766e)](https://posttraining-atlas.grenzlinie-liu.chatgpt.site/)
+
 **From "the model can talk" to "the model can finish tasks" — an interactive companion to a full-length book on LLM post-training.**
 
-[中文版 README](README.md)
+🌐 **Read online: <https://posttraining-atlas.grenzlinie-liu.chatgpt.site/>** | [中文版 README](README.md)
 
 PostTrain Atlas compresses a 791-page book on LLM post-training into an actionable learning map: **6 parts, 26 chapters, 8 core formulas, and 1 production playbook**. It answers a single core question — how to turn the probability distribution produced by pre-training into a policy that reliably pursues goals, uses tools, accepts verification, and completes tasks over long horizons.
 
